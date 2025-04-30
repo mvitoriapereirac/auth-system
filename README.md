@@ -36,7 +36,7 @@ Este projeto utiliza **Docker** e **Docker Compose** para facilitar a execução
 ### 1. Clone o projeto
 
 ```bash
-git clone https://github.com/seu-usuario/auth-system.git
+git clone https://github.com/mvitoriapereirac/auth-system.git
 cd auth-system
 ```
 
