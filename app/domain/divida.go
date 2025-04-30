@@ -1,8 +1,9 @@
 package domain
 
 type Divida struct {
-	ID                 uint    `json:"id"`
-	Valor              float64 `json:"valor"`
-	Vencimento         string  `json:"vencimento"`
-	NaturezaCobrancaID uint    `json:"naturezaCobrancaId"`
+    ID                 uint    `gorm:"primaryKey" json:"id"`
+    Valor              float64 `gorm:"not null" json:"valor"`
+    Vencimento         string  `gorm:"type:date;not null" json:"vencimento"`
+    NaturezaCobrancaID uint    `json:"naturezaCobrancaId"`
+    NaturezaCobranca   NaturezaCobranca `gorm:"foreignKey:NaturezaCobrancaID"`
 }

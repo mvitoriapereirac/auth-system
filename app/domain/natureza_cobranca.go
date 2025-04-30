@@ -1,5 +1,6 @@
 package domain
+
 type NaturezaCobranca struct {
-	ID uint  `json:"id"`
-	RazaoCobranca string  `json:"razaoCobranca"`
+    ID            uint   `gorm:"primaryKey" json:"id"`
+    RazaoCobranca string `json:"razaoCobranca"`
 }
