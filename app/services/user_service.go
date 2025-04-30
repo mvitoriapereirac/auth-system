@@ -42,7 +42,6 @@ func (s *authService) SaveToken(ctx context.Context, userID uint, token string) 
 	return config.RDB.Set(ctx, getRedisKey(userID), token, time.Hour*24).Err()
 }
 
-// const redisTokenPrefix = "user_token:" // Idealmente, estaria em um arquivo de constantes relacionadas
 func getRedisKey(userID uint) string {
 	return fmt.Sprintf("%s%d", constants.RedisKey, userID)
 }
