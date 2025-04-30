@@ -1,13 +1,10 @@
-// pkg/utils/cpf.go
 package utils
 
 import (
 	"regexp"
 )
 
-// IsValidCPF checks if a CPF is valid (only basic format and length check)
 func IsValidCPF(cpf string) bool {
-	// Remove all non-digit characters
 	re := regexp.MustCompile(`\D`)
 	cpf = re.ReplaceAllString(cpf, "")
 
@@ -15,6 +12,6 @@ func IsValidCPF(cpf string) bool {
 		return false
 	}
 
-	// TODO: Implement full CPF validation algorithm (check digits)
+	// TODO: Implementar validação completa de CPF
 	return true
 }

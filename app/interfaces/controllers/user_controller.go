@@ -1,132 +1,101 @@
-// // package controllers
-
-// // import (
-// //     "github.com/gin-gonic/gin"
-// //     "auth-system/app/usecases"
-// //     "net/http"
-// // )
-
-// // type UserController struct {
-// //     userUsecase usecases.UserUsecase
-// // }
-
-// // func NewUserController(userUsecase usecases.UserUsecase) *UserController {
-// //     return &UserController{userUsecase}
-// // }
-
-// // func (uc *UserController) GetUser(c *gin.Context) {
-// //     id := c.Param("id")
-// //     user, err := uc.userUsecase.GetUserByID(id)
-// //     if err != nil {
-// //         c.JSON(http.StatusNotFound, gin.H{"mensagem": "Usuário não encontrado"})
-// //         return
-// //     }
-// //     c.JSON(http.StatusOK, user)
-// // }
-
-
-// package controllers
-
-// import (
-//     "auth-system/app/usecases"
-//     "auth-system/app/domain"
-//     "github.com/gin-gonic/gin"
-//     "net/http"
-// )
-
-// type UserController struct {
-//     usecase usecases.UserUsecase
-// }
-
-// // NewUserController cria uma nova instância do UserController
-// func NewUserController(usecase usecases.UserUsecase) *UserController {
-//     return &UserController{usecase: usecase}
-// }
-
-// // CreateUser cria um novo usuário
-// func (ctrl *UserController) CreateUser(c *gin.Context) {
-//     var user domain.User
-//     if err := c.BindJSON(&user); err != nil {
-//         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-//         return
-//     }
-
-//     newUser, err := ctrl.usecase.CreateUser(user)
-//     if err != nil {
-//         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-//         return
-//     }
-
-//     c.JSON(http.StatusOK, gin.H{"user": newUser})
-// }
-
-// func (uc *UserController) Login(c *gin.Context) {
-//     var loginInput struct {
-//         Email string `json:"email" binding:"required,email"`
-//         Senha string `json:"senha" binding:"required"`
-//     }
-
-//     if err := c.ShouldBindJSON(&loginInput); err != nil {
-//         c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
-//         return
-//     }
-
-//     token, err := uc.usecase.Login(c.Request.Context(), loginInput.Email, loginInput.Senha)
-//     if err != nil {
-//         c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-//         return
-//     }
-
-//     c.JSON(http.StatusOK, gin.H{"token": token})
-// }
-
-
 package controllers
 
 import (
-    "auth-system/app/usecases"
-    "auth-system/app/domain"
-    "github.com/gofiber/fiber/v2"
-    "log"
+	"auth-system/app/config"
+	"auth-system/app/core/constants"
+	"auth-system/app/domain"
+	"auth-system/app/usecases"
+	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
+	"strings"
 )
 
 type UserController struct {
-    usecase usecases.UserUsecase
+	usecase usecases.UserUsecase
 }
 
 func NewUserController(usecase usecases.UserUsecase) *UserController {
-    return &UserController{usecase: usecase}
+	return &UserController{usecase: usecase}
 }
 
-func (ctrl *UserController) CreateUser(c *fiber.Ctx) error {
-    var user domain.User
-    if err := c.BodyParser(&user); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+func (uc *UserController) CreateUser(c *fiber.Ctx) error {
+	var user domain.User
+	if err := c.BodyParser(&user); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    newUser, err := ctrl.usecase.CreateUser(user)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	newUser, err := uc.usecase.CreateUser(user)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"user": newUser})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"user": newUser})
 }
 
 func (uc *UserController) Login(c *fiber.Ctx) error {
-    var loginInput struct {
-        Email string `json:"email"`
-        Senha string `json:"senha"`
-    }
+	var loginInput struct {
+		CPF   string `json:"cpf"`
+		Senha string `json:"senha"`
+	}
 
-    if err := c.BodyParser(&loginInput); err != nil {
-        log.Println(err)
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Dados inválidos"})
-    }
+	if err := c.BodyParser(&loginInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Dados inválidos"})
+	}
 
-    token, err := uc.usecase.Login(c.Context(), loginInput.Email, loginInput.Senha)
-    if err != nil {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
-    }
+	token, err := uc.usecase.Login(c.Context(), loginInput.CPF, loginInput.Senha)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
+}
+
+func (uc *UserController) Logout(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "token ausente",
+		})
+	}
+
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("método de assinatura inválido")
+		}
+		return []byte("secret"), nil
+	})
+
+	if err != nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "token inválido",
+		})
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "token inválido",
+		})
+	}
+
+	userIDFloat, ok := claims[constants.UserSessionKey].(float64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "ID do usuário inválido no token",
+		})
+	}
+
+	userID := uint(userIDFloat)
+
+	err = config.RDB.Del(c.Context(), fmt.Sprintf("%s%d", constants.RedisKey, userID)).Err()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "falha ao remover token",
+		})
+	}
+
+	return c.JSON(fiber.Map{"message": "logout realizado com sucesso"})
 }

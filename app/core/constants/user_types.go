@@ -1,8 +1,7 @@
 package constants
 
 const (
-    UserTypeConsumidor = "C"
-    UserTypeEmpresa    = "E"
-    UserTypeInadequado    = "N"
-
+	UserTypeConsumidor = "C"
+	UserTypeEmpresa    = "E"
+	UserTypeInadequado = "N"
 )
