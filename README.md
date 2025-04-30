@@ -96,7 +96,6 @@ Autentica o usuário e retorna um token de sessão.
         "vencimento": "09-08-2024",
         "valor": 20.60
     }
-    
 }
 ```
 
